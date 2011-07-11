@@ -10,7 +10,6 @@ module ActiveScaffold
       include ActiveScaffold::Helpers::ShowColumnHelpers
       include ActiveScaffold::Helpers::FormColumnHelpers
       include ActiveScaffold::Helpers::SearchColumnHelpers
-      include ActiveScaffold::Helpers::CountryHelpers
       include ActiveScaffold::Helpers::HumanConditionHelpers
 
       ##
@@ -40,6 +39,28 @@ module ActiveScaffold
           controller.controller_path
         rescue ActiveScaffold::ControllerNotFound
           controller = nil
+        end
+      end
+
+      def partial_pieces(partial_path)
+        if partial_path.include?('/')
+          return File.dirname(partial_path), File.basename(partial_path)
+        else
+          return controller.class.controller_path, partial_path
+        end
+      end
+
+      # This is the template finder logic, keep it updated with however we find stuff in rails
+      # currently this very similar to the logic in ActionBase::Base.render for options file
+      # TODO: Work with rails core team to find a better way to check for this.
+      # Not working so far for rais 3.1
+      def template_exists?(template_name, path)
+        begin
+          method = 'find_template'
+          #self.view_paths.send(method, template_name)
+          return false
+        rescue ActionView::MissingTemplate => e
+          return false
         end
       end
 
@@ -114,7 +135,7 @@ module ActiveScaffold
 
       # a general-use loading indicator (the "stuff is happening, please wait" feedback)
       def loading_indicator_tag(options)
-        image_tag "/images/active_scaffold/default/indicator.gif", :style => "visibility:hidden;", :id => loading_indicator_id(options), :alt => "loading indicator", :class => "loading-indicator"
+        image_tag "indicator.gif", :style => "visibility:hidden;", :id => loading_indicator_id(options), :alt => "loading indicator", :class => "loading-indicator"
       end
 
       # Creates a javascript-based link that toggles the visibility of some element on the page.
@@ -209,7 +230,7 @@ module ActiveScaffold
           html = link_to(image_tag(link.image[:name] , :size => link.image[:size], :alt => label), url, html_options)
         end
         # if url is nil we would like to generate an anchor without href attribute
-        url.nil? ? html.sub(/href=".*?"/, '') : html 
+        url.nil? ? html.sub(/href=".*?"/, '').html_safe : html.html_safe
       end
       
       def url_options_for_nested_link(column, record, link, url_options, options = {})
@@ -302,7 +323,7 @@ module ActiveScaffold
       end
 
       def column_show_add_new(column, associated, record)
-        value = column.plural_association? || (column.singular_association? and not associated.empty?)
+        value = (column.plural_association? && !column.readonly_association?) || (column.singular_association? and not associated.empty?)
         value = false unless record.class.authorized_for?(:crud_type => :create)
         value
       end

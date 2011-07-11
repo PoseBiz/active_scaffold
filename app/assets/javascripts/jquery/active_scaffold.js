@@ -13,7 +13,7 @@ $(document).ready(function() {
       ActiveScaffold.enable_form(as_form);
     }
   });
-  $('form.as_form').live('ajax:failure', function(event) {
+  $('form.as_form').live('ajax:error', function(event, xhr, status, error) {
     var as_div = $(this).closest("div.active-scaffold");
     if (as_div) {
       ActiveScaffold.report_500_response(as_div)
@@ -34,7 +34,13 @@ $(document).ready(function() {
       } else {
         // hack: jquery requires if you request for javascript that javascript
         // is coming back, however rails has a different mantra
-        if (action_link.position) event.data_type = 'rails';
+        if (action_link.position) {
+          if (parseFloat($.fn.jquery) >= 1.5) {
+            event.data_type = 'text';
+          } else {
+            event.data_type = 'rails';
+          }
+        }
         if (action_link.loading_indicator) action_link.loading_indicator.css('visibility','visible');
         action_link.disable();
       }
@@ -61,7 +67,7 @@ $(document).ready(function() {
     }
     return true;
   });
-  $('a.as_action').live('ajax:failure', function(event) {
+  $('a.as_action').live('ajax:error', function(event, xhr, status, error) {
     var action_link = ActiveScaffold.ActionLink.get($(this));
     if (action_link) {
       ActiveScaffold.report_500_response(action_link.scaffold_id());
@@ -98,7 +104,7 @@ $(document).ready(function() {
     }
     return true;
   });
-  $('a.as_cancel').live('ajax:failure', function(event) {
+  $('a.as_cancel').live('ajax:error', function(event, xhr, status, error) {
     var action_link = ActiveScaffold.find_action_link($(this));
     if (action_link) {
       ActiveScaffold.report_500_response(action_link.scaffold_id());
@@ -112,7 +118,7 @@ $(document).ready(function() {
     as_sort.closest('th').addClass('loading');
     return true;
   });
-  $('a.as_sort').live('ajax:failure', function(event) {
+  $('a.as_sort').live('ajax:error', function(event, xhr, status, error) {
     var as_scaffold = $(this).closest('.active-scaffold');
     ActiveScaffold.report_500_response(as_scaffold);
     return true;
@@ -137,7 +143,7 @@ $(document).ready(function() {
     as_paginate.prevAll('img.loading-indicator').css('visibility','visible');
     return true;
   });
-  $('a.as_paginate').live('ajax:failure', function(event) {
+  $('a.as_paginate').live('ajax:error', function(event, xhr, status, error) {
     var as_scaffold = $(this).closest('.active-scaffold');
     ActiveScaffold.report_500_response(as_scaffold);
     return true;
@@ -597,7 +603,7 @@ var ActiveScaffold = {
   },
   
   highlight: function(element) {
-    if (typeof(element) == 'string') element = '#' + element;
+    if (typeof(element) == 'string') element = $('#' + element);
     if (typeof(element.effect) == 'function') {
       element.effect("highlight", {}, 3000);
     }

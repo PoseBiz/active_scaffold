@@ -9,7 +9,7 @@ module ActiveScaffold::DataStructures
     end
     
     def set_default_sorting(model)
-      model_scope = model.send(:current_scoped_methods)
+      model_scope = model.send(:build_default_scope)
       order_clause = model_scope.arel.order_clauses.join(",") if model_scope
 
       # If an ORDER BY clause is found set default sorting according to it, else
@@ -128,7 +128,7 @@ module ActiveScaffold::DataStructures
 
     def set_sorting_from_order_clause(order_clause, model_table_name = nil)
       clear
-      order_clause.split(',').each do |criterion|
+      order_clause.to_s.split(',').each do |criterion|
         unless criterion.blank?
           order_parts = extract_order_parts(criterion)
           add(order_parts[:column_name], order_parts[:direction]) unless different_table?(model_table_name, order_parts[:table_name])

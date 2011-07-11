@@ -11,12 +11,12 @@ begin
 rescue LoadError
 end
 
-require 'active_scaffold_assets'
 require 'active_scaffold/active_record_permissions'
 require 'active_scaffold/paginator'
 require 'active_scaffold/responds_to_parent'
 
 require 'active_scaffold/version'
+require 'active_scaffold/engine'
 
 module ActiveScaffold
   autoload :AttributeParams, 'active_scaffold/attribute_params'
@@ -126,7 +126,7 @@ module ActiveScaffold
   end
   
   def self.js_framework
-    @@js_framework ||= :prototype
+    @@js_framework ||= :jquery
   end
 
   # exclude bridges you do not need
@@ -237,9 +237,9 @@ module ActiveScaffold
       end
     end
     
-    def link_for_association(column, options = {})
+    def active_scaffold_controller_for_column(column, options = {})
       begin
-        controller = if column.polymorphic_association?
+        if column.polymorphic_association?
           :polymorph
         elsif options.include?(:controller)
           "#{options[:controller].to_s.camelize}Controller".constantize
@@ -247,8 +247,12 @@ module ActiveScaffold
           active_scaffold_controller_for(column.association.klass)
         end
       rescue ActiveScaffold::ControllerNotFound
-        controller = nil        
+        nil        
       end
+    end
+    
+    def link_for_association(column, options = {})
+      controller = active_scaffold_controller_for_column(column, options)
       
       unless controller.nil?
         options.reverse_merge! :label => column.label, :position => :after, :type => :member, :controller => (controller == :polymorph ? controller : controller.controller_path), :column => column
@@ -365,17 +369,3 @@ module ActiveScaffold
 end
 
 require 'active_scaffold_env'
-
-##
-## Run the install assets script, too, just to make sure
-## But at least rescue the action in production
-##
-
-Rails::Application.initializer("active_scaffold.install_assets") do
-  begin
-    ActiveScaffoldAssets.copy_to_public(ActiveScaffold.root, {:clean_up_destination => true})
-  rescue
-    raise $! unless Rails.env == 'production'
-  end
-end if defined?(ACTIVE_SCAFFOLD_GEM)
-
